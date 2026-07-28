@@ -1,20 +1,934 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="robots" content="noindex, nofollow">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>艾津技术中心协作项目进度看板</title>
-  <!-- 看板实际地址：每次部署后由维护者更新这一行即可 -->
-  <script>
-    var DASHBOARD_URL = "https://3000-8770541b6a9b44b496a6e9fa2fc9e5c2.e2b.ap-beijing.sandbox.cloudstudio.club/";
-    window.location.replace(DASHBOARD_URL);
-  </script>
-  <meta http-equiv="refresh" content="0; url=https://3000-8770541b6a9b44b496a6e9fa2fc9e5c2.e2b.ap-beijing.sandbox.cloudstudio.club/">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>技术中心协作项目进度看板</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family:'Microsoft YaHei','Segoe UI',Arial,sans-serif;
+  background:#F5F7FA; color:#1A1A1A; min-height:100vh; line-height:1.6;
+}
+.container { max-width:1600px; margin:0 auto; padding:30px 30px; }
+
+/* 头部 */
+.header {
+  background:linear-gradient(135deg,#004883 0%,#005a9e 50%,#7BC143 100%);
+  padding:40px 50px; border-radius:12px; margin-bottom:30px;
+  position:relative; overflow:hidden;
+}
+.header::before {
+  content:''; position:absolute; top:0; left:0; right:0; bottom:0;
+  background:url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400"><path d="M0,200 Q300,100 600,200 T1200,200 L1200,400 L0,400 Z" fill="rgba(123,193,67,0.1)"/></svg>') no-repeat center;
+  background-size:cover; opacity:0.3;
+}
+.header-content { position:relative; z-index:1; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+.header h1 { font-size:36px; font-weight:700; color:#FFF; letter-spacing:2px; }
+.header-logo { height:80px; margin-right:20px; vertical-align:middle; filter:drop-shadow(0 0 8px rgba(255,255,255,0.6)); }
+.header-title-group { display:flex; align-items:center; flex-wrap:wrap; gap:16px; }
+.header .subtitle { font-size:15px; color:rgba(255,255,255,0.85); letter-spacing:1px; }
+
+/* 统计卡片 */
+.stats { display:grid; grid-template-columns:repeat(4,1fr); gap:20px; margin-bottom:30px; }
+.stat-card {
+  background:#FFF; padding:30px 28px; border-radius:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,0.07); transition:all .3s;
+  border-left:4px solid; position:relative; overflow:hidden;
+}
+.stat-card::before {
+  content:''; position:absolute; top:0; right:0; width:80px; height:80px;
+  background:linear-gradient(135deg,transparent 50%,rgba(0,72,131,0.03) 50%); border-radius:0 0 0 80px;
+}
+.stat-card:hover { transform:translateY(-4px); box-shadow:0 8px 25px rgba(0,72,131,0.12); }
+.stat-card.total { border-left-color:#004883; background:linear-gradient(135deg,rgba(0,72,131,0.08),rgba(0,72,131,0.02)); }
+.stat-card.active { border-left-color:#7BC143; background:linear-gradient(135deg,rgba(123,193,67,0.08),rgba(123,193,67,0.02)); }
+.stat-card.completed { border-left-color:#005a9e; background:linear-gradient(135deg,rgba(0,90,158,0.08),rgba(0,90,158,0.02)); }
+.stat-card.issue { border-left-color:#e74c3c; background:linear-gradient(135deg,rgba(231,76,60,0.08),rgba(231,76,60,0.02)); }
+.stat-icon { font-size:32px; margin-bottom:10px; }
+.stat-card .number { font-size:46px; font-weight:700; margin-bottom:6px; line-height:1; }
+.stat-card.total .number { color:#004883; }
+.stat-card.active .number { color:#7BC143; }
+.stat-card.completed .number { color:#005a9e; }
+.stat-card.issue .number { color:#e74c3c; }
+.stat-card .label { font-size:14px; color:#666; font-weight:500; letter-spacing:1px; }
+
+/* 图表行 */
+@media(max-width:900px){ }
+
+/* 筛选按钮 */
+.filters { display:flex; gap:12px; margin-bottom:25px; flex-wrap:wrap; align-items:center; }
+.filter-group { display:flex; gap:8px; align-items:center; }
+.filter-label { font-size:13px; color:#888; font-weight:500; margin-right:2px; }
+.filter-btn {
+  padding:8px 20px; background:rgba(0,72,131,0.04); border:1px solid #d0d6de; color:#555;
+  border-radius:8px; cursor:pointer; transition:all .3s; font-size:13px; font-weight:500;
+}
+.filter-btn:hover { border-color:#004883; color:#004883; background:rgba(0,72,131,0.08); }
+.filter-btn.active { background:#004883; border-color:#004883; color:#FFF; box-shadow:0 4px 12px rgba(0,72,131,0.25); }
+.filter-select {
+  padding:8px 14px; border:1px solid #d0d6de; border-radius:8px; font-size:13px;
+  color:#555; background:rgba(0,72,131,0.04); cursor:pointer; outline:none; font-weight:500;
+}
+.filter-select:focus { border-color:#004883; }
+.filter-divider { width:1px; height:28px; background:#ddd; margin:0 4px; }
+
+/* 项目卡片 */
+.project-list { display:flex; flex-direction:column; gap:18px; }
+.project-card {
+  background:#FFF; border-radius:12px; padding:28px 32px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.08); transition:all .3s;
+  border-left:4px solid #004883; position:relative;
+  border:1px solid #e8eaed;
+}
+.project-card:hover { transform:translateX(4px); box-shadow:0 4px 22px rgba(0,72,131,0.12); border-left-width:6px; }
+.project-card.status-completed { border-left-color:#7BC143; background:linear-gradient(135deg,rgba(123,193,67,0.06),rgba(123,193,67,0.015)); }
+.project-card.status-active { border-left-color:#004883; background:linear-gradient(135deg,rgba(0,72,131,0.05),rgba(0,72,131,0.01)); }
+.project-card.status-issue { border-left-color:#e74c3c; background:linear-gradient(135deg,rgba(231,76,60,0.05),rgba(231,76,60,0.01)); }
+
+.project-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px; flex-wrap:wrap; gap:12px; }
+.project-name { font-size:18px; font-weight:600; color:#1A1A1A; flex:1; min-width:200px; }
+.project-status {
+  padding:6px 18px; border-radius:20px; font-size:12px; font-weight:600;
+  letter-spacing:0.5px; white-space:nowrap;
+}
+.status-completed-badge { background:rgba(123,193,67,0.1); color:#7BC143; border:2px solid rgba(123,193,67,0.3); }
+.status-active-badge { background:rgba(0,72,131,0.1); color:#004883; border:2px solid rgba(0,72,131,0.3); }
+.status-issue-badge { background:rgba(231,76,60,0.1); color:#e74c3c; border:2px solid rgba(231,76,60,0.3); }
+
+.project-info { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:16px; }
+.info-item { display:flex; align-items:center; font-size:14px; white-space:nowrap; }
+.info-label { color:#888; width:90px; flex-shrink:0; font-weight:500; }
+.info-value { color:#1A1A1A; font-weight:600; }
+
+.date-selector { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; align-items:center;
+  padding:12px; background:#F8F9FA; border-radius:8px; }
+.date-label { font-size:13px; color:#888; font-weight:500; margin-right:4px; }
+.date-btn {
+  padding:6px 16px; background:#FFF; border:2px solid #7BC143; border-radius:6px;
+  cursor:pointer; font-size:12px; color:#555; transition:all .3s; font-weight:500;
+}
+.date-btn:hover { border-color:#004883; color:#004883; background:rgba(0,72,131,0.03); }
+.date-btn.active { background:#004883; border-color:#004883; color:#FFF; box-shadow:0 2px 8px rgba(0,72,131,0.25); }
+.date-btn.has-issue { border-color:#e74c3c; color:#e74c3c; }
+.date-btn.has-issue.active { background:#e74c3c; border-color:#e74c3c; color:#FFF; }
+
+.project-progress { margin-top:12px; }
+.progress-header { display:flex; justify-content:space-between; margin-bottom:8px; font-size:13px; }
+.progress-label { color:#888; font-weight:500; }
+.progress-pct { color:#004883; font-weight:700; font-size:15px; }
+.progress-bar { height:8px; background:#F0F0F0; border-radius:4px; overflow:hidden; }
+.progress-fill { height:100%; background:linear-gradient(90deg,#004883 0%,#7BC143 100%); border-radius:4px; transition:width .6s; }
+.status-completed .progress-fill { background:linear-gradient(90deg,#7BC143 0%,#005a9e 100%); }
+.status-issue .progress-fill { background:linear-gradient(90deg,#e74c3c 0%,#ff6b6b 100%); }
+
+.latest-update {
+  margin-top:16px; padding:16px 18px; background:#F8F9FA;
+  border-left:3px solid #7BC143; border-radius:6px; font-size:13px; color:#333; line-height:1.7;
+}
+.latest-update strong { color:#004883; }
+.update-time { font-size:12px; color:#aaa; margin-top:8px; display:flex; align-items:center; gap:4px; }
+
+.section-divider {
+  margin:30px 0 20px; padding:14px 24px;
+  background:#004883; border-radius:8px;
+  font-size:18px; font-weight:700; color:#FFF;
+}
+.section-divider.qa { background:#005a9e; }
+
+.footer-bar {
+  text-align:center; margin-top:40px; padding:20px;
+  color:#aaa; font-size:13px; border-top:1px solid #E0E0E0;
+}
+.footer-bar a { color:#004883; text-decoration:none; }
+
+/* 搜索框 */
+.search-input { padding:8px 16px; border:1px solid #d0d6de; border-radius:8px; font-size:13px; color:#1A1A1A; background:rgba(0,72,131,0.04); outline:none; width:200px; transition:border-color .3s; }
+.search-input:focus { border-color:#004883; width:260px; }
+
+/* 卡片折叠 */
+.project-card .card-body { }
+.project-card.collapsed .card-body { display:none; }
+.project-card .collapse-arrow { font-size:12px; color:#aaa; margin-left:8px; transition:transform .3s; cursor:pointer; }
+.project-card.collapsed .collapse-arrow { }
+.collapse-toggle { font-size:12px; color:#004883; cursor:pointer; margin-left:12px; font-weight:400; }
+.collapse-toggle:hover { text-decoration:underline; }
+
+/* 回到顶部 */
+.back-to-top { position:fixed; bottom:32px; right:32px; width:44px; height:44px; border-radius:50%; background:#004883; color:#FFF; border:none; cursor:pointer; font-size:20px; box-shadow:0 4px 16px rgba(0,72,131,0.3); opacity:0; pointer-events:none; transition:opacity .3s; z-index:999; }
+.back-to-top.visible { opacity:1; pointer-events:auto; }
+.back-to-top:hover { background:#005a9e; transform:translateY(-2px); }
+
+@media(max-width:1024px){
+  .stats{ grid-template-columns:repeat(2,1fr); }
+  .project-info{ grid-template-columns:1fr 1fr; }
+  .search-input{ width:160px; }
+  .search-input:focus{ width:200px; }
+}
+@media(max-width:768px){
+  .container{ padding:15px; }
+  .header{ padding:25px 20px; }
+  .header h1{ font-size:24px; }
+  .header-logo{ height:50px; }
+  .stats{ grid-template-columns:repeat(2,1fr); }
+  .project-info{ gap:12px; }
+}
+</style>
 </head>
 <body>
-  <p>正在跳转到最新看板…如果未自动跳转，请<a href="https://3000-8770541b6a9b44b496a6e9fa2fc9e5c2.e2b.ap-beijing.sandbox.cloudstudio.club/">点击这里</a>。</p>
+
+<div class="container">
+
+  <!-- 头部 -->
+  <div class="header">
+    <div class="header-content">
+      <div class="header-title-group">
+        <img class="header-logo" src="data:image/png;base64,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" alt="Logo">
+        <div>
+          <h1>技术中心协作项目进度看板</h1>
+          <p class="subtitle">REAL-TIME PROJECT DASHBOARD · <span id="headerTime">--</span></p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 统计卡片 -->
+  <div class="stats">
+    <div class="stat-card total">
+      <div class="stat-icon">📊</div>
+      <div class="number" id="stat-total">0</div>
+      <div class="label">项目总数</div>
+    </div>
+    <div class="stat-card active">
+      <div class="stat-icon">🚀</div>
+      <div class="number" id="stat-active">0</div>
+      <div class="label">进行中</div>
+    </div>
+    <div class="stat-card completed">
+      <div class="stat-icon">✅</div>
+      <div class="number" id="stat-completed">0</div>
+      <div class="label">已完成</div>
+    </div>
+    <div class="stat-card issue">
+      <div class="stat-icon">⚠️</div>
+      <div class="number" id="stat-issue">0</div>
+      <div class="label">存在问题</div>
+    </div>
+  </div>
+
+  <!-- 筛选按钮 -->
+  <div class="filters">
+    <div class="filter-group" id="filters-section">
+      <span class="filter-label">📂 项目类型：</span>
+      <button class="filter-btn active" onclick="filterSection('all')">全部</button>
+      <button class="filter-btn" onclick="filterSection('rd')">🔬 研发项目</button>
+      <button class="filter-btn" onclick="filterSection('qa')">🔍 质检项目</button>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group">
+      <span class="filter-label">👤 负责人：</span>
+      <select class="filter-select" id="ownerFilter" onchange="updateFilters()">
+        <option value="all">全部</option>
+      </select>
+    </div>
+    <div class="filter-divider"></div>
+    <div class="filter-group" id="filters-status">
+      <span class="filter-label">📊 状态：</span>
+      <button class="filter-btn active" onclick="filterStatus('all')">全部</button>
+      <button class="filter-btn" onclick="filterStatus('completed')">✅ 已完成</button>
+      <button class="filter-btn" onclick="filterStatus('active')">🚀 进行中</button>
+      <button class="filter-btn" onclick="filterStatus('issue')">⚠️ 存在问题</button>
+    </div>
+    <div class="filter-divider"></div>
+    <input type="text" class="search-input" placeholder="🔍 搜索项目..." id="searchInput" oninput="renderAll()">
+    <span style="font-size:12px;color:#aaa;margin-left:auto;cursor:pointer" onclick="toggleCollapse()" id="collapseToggle">📦 折叠已完成</span>
+  </div>
+
+  <!-- 项目列表 -->
+  <div id="rdSection">
+    <div class="section-divider">🔬 研发协作项目 <span style="font-size:13px;font-weight:400;margin-left:8px;" id="rdCount"></span></div>
+    <div class="project-list" id="rdList"></div>
+  </div>
+  <div id="qaSection" style="margin-top:10px;">
+    <div class="section-divider qa">🔍 质检协作项目 <span style="font-size:13px;font-weight:400;margin-left:8px;" id="qaCount"></span></div>
+    <div class="project-list" id="qaList"></div>
+  </div>
+
+  <div class="footer-bar">
+    数据来源：<a href="https://www.kdocs.cn/l/ccypXTpXlvXp" target="_blank">金山文档 · 技术中心协作项目进度表</a> &nbsp;|&nbsp; 自动刷新：每24小时 &nbsp;|&nbsp; <span id="refreshTime"></span>
+  </div>
+</div>
+
+<button class="back-to-top" id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<script>
+// ==================== 数据加载 ====================
+// Try loading external data.json first; fall back to embedded data
+const rawData = {
+  "rd": [
+    {
+      "name": "460g/L草甘膦钾盐+57g/L绿草啶钾盐SL 配方开发，详见利尔登记信息，同时开发相同草甘膦酸含量铵盐+57g/L绿草啶钾盐SL配方 客户样品比重1.257，红色",
+      "date": "2026.6.1",
+      "owner": "赵凌天",
+      "p65": "1、460g/L草甘膦钾盐+57g/L绿草啶钾盐SL已初步做了配方，用草甘膦酸及绿草定酸和KOH成盐，KOH添加量大约14，采用拓际665G助剂12.5%，水补足，比重大约1.26，目前冷热贮2天；\n2、460g/L草甘膦铵盐+57g/L绿草定钾盐SL，配方还没开始做",
+      "p612": "1、460g/L草甘膦钾盐+57g/L绿草啶钾盐SL，冷藏析晶，配方需要重新开发，目前没有草甘膦酸原药了，以向采购提交采购申请，目前还没到\n2、460g/L草甘膦铵盐+57g/L绿草定钾盐SL，无法完全溶解，科翼表示这个配方做不了，等待草甘膦酸原药继续尝试",
+      "p618": "确认是绿草定钾盐在水中的溶解度不够，单独做57g/L绿草定钾盐加热可溶于水，降温即开始大量析晶，在析晶的制剂中兑水则晶体迅速溶解，由此可以判断是绿草定钾盐在水中溶解度不够，尝试加入甲醇、无水乙醇、DMF也没有显著提升溶解度，怀疑利尔登记中绿草定实际不是钾盐；目前该配方开发失败，需要更换绿草定成盐种类才可以继续开发",
+      "p626": "更换为草甘膦钾盐+绿草定三乙醇胺盐制作配方，单做绿草定三乙醇胺盐水相溶解度够了，但是加到一起会析晶，加入PKO能维持不析晶，但是草甘膦钾盐水相和绿草啶三乙醇胺盐水相不互溶，寻求助剂厂家帮助中，科翼反馈草甘膦和绿草啶复配只能做三乙胺盐，其他的搭配都不做了",
+      "p703": "更换为草甘膦三乙胺盐+绿草定三乙胺盐进行配方开发，当前加热可溶解，绿草定三乙胺盐溶液和草甘膦三乙胺盐溶液接触无析晶现象，但是降温制剂大量析晶，尝试降低制剂添加量及加入少量剂型溶解观察配方稳定性",
+      "p710": "配方开发失败，尚未找到稳定的体系",
+      "status": "in-progress"
+    },
+    {
+      "name": "200g/L草铵膦SL配方，采用乳化剂5018-ZD\n科翼做助剂，筛选墨绿色、深蓝色、黄色、天蓝色染料；同时测试不同助剂厂家助剂效果（包括不同粘度配方），对比价格",
+      "date": "2026.6.1",
+      "owner": "赵凌天",
+      "p65": "1、分别采用草铵膦酸和草铵膦WSG制作配方，WSG溶解后透明度稍差，配方均在冷热贮中，乳化剂目前用的APG；\n2、科翼助剂5018-ZD还没到\n3、寄送了草铵膦WSG给凌讯调试配方，后续会寄送助剂（无粘度和高粘）\n4、染料还没购买",
+      "p612": "1、科翼5018-ZD（增粘）乳化剂草铵膦原药及WSG配方均已尝试，配方目前稳定\n2、科翼无粘度助剂6.15日到工厂，进行验证\n3、凌汛（雅各）有无粘度助剂，增粘助剂正在调配\n4、染料已购买还没到",
+      "p618": "1、科翼增粘、无粘配方均已验证冷热贮中\n2、染料已到，下周制作各染料样品",
+      "p626": "加各染料的样品已制作，前期的样品冷热贮考察及含量检测均合格",
+      "p703": "和科翼索要无粘及增粘助剂各3kg，等带了之后给张恺寄送几个草铵膦供应商和98%草铵膦原药混合制作固体颗粒",
+      "p710": "按88%草铵膦WSG为原药，已提供配方",
+      "status": "completed"
+    },
+    {
+      "name": "40g/L烟嘧磺隆OD 使用棕榈油及脂肪酸\n甲酯开发稳定配方及含水体系假油悬配方开发",
+      "date": "2026.6.1",
+      "owner": "郭祥蕊",
+      "p65": "1.脂肪酸甲酯体系，配方已考察7天，目前稳定性正常；\n2.棕榈油正在找厂家要样品；\n3.烟嘧磺隆SC水解，分解率很高，尝试加入少量水",
+      "p612": "1.脂肪酸甲酯体系，配方已考察14天，目前稳定性正常，继续考察热储转常温情况；\n2.棕榈油正在找厂家要样品（正在沟通）；\n3.烟嘧磺隆SC，OD体系中加入少量水（3%/5%）研磨过程中出现膏化现象，已拿到京博样品进行稳定性考察，测定样品中水分为22%左右。",
+      "p618": "1.脂肪酸甲酯体系配方考察结束，稳定性正常；厂家反馈批次差异性较大，验证不同批次产品稳定性。\n2.棕榈油样品已有，乳化体系已确定，接下来验证稳定性。\n3.烟嘧磺隆OD含水体系目前暂无进展，加入少量水后研磨即出现膏化。",
+      "p626": "1.脂肪酸甲酯体系配方考察结束，稳定性正常；已和丰倍厂家沟通提供几个不同批次的脂肪酸甲酯进行验证\n2.棕榈油体系粘度偏大，入水分散一般，进行稳定性考察。\n3.烟嘧磺隆OD含水体系（SC体系中加入乳化好的油），粘度偏大，类似果冻状，入水分散差，摇匀后正常，进行稳定性考察。",
+      "p703": "1.验证了两个不同批次的脂肪酸甲酯体系，入水乳化分散还可以，稳定性考察4天，暂未发现异常情况。\n2.棕榈油体系热储7天后粘度变大，流动性变差，还需要进一步优化配方。\n3.含水体系配方热储7天后物理稳定性可以，到期后测定分解率；同时在验证pH在7左右配方稳定性。",
+      "p710": "1.不同批次的脂肪酸甲酯体系，目前稳定性考察10天，目前稳定性还可以，继续考察。\n2.棕榈油体系热储后粘度较大，入水沉淀较多，继续优化乳化体系。\n3.含水配方54℃热储13天后分解率高达82%，整体状态不是很好，继续优化配方。",
+      "status": "in-progress",
+      "p717": "1.不同批次的脂肪酸甲酯体系，目前稳定性考察结束，稳定性正常。\n2.棕榈油体系热储后粘度较大，入水沉淀较多，正在调整乳化。\n3.含水配方体系中加入稳定剂BHT及尿素，入水乳化分散可以，目前54℃热储6天，状态正常，继续考察，到期后送检测定分解率。",
+      "p724": "1.脂肪酸甲酯体系考察结束，待进行放大实验。\n2.棕榈油乳化体系还在调整，该体系粘度偏大，加入适量溶剂油。\n3.含水配方体系中加入稳定剂BHT及尿素，54℃热储7天，分解率在65%左右，分解率很高，继续进行优化。"
+    },
+    {
+      "name": "8%乳化剂601与150#混合物配制；8%乳化剂\n505与150#混合物配制；观察其稳定性并用其\n做溶剂调整2.5%功夫EC（功夫采用精粉和低含量油膏及30%含量精粉配制母液分别做配方）、10%氯氰EC与40%丙溴磷+4%氯氰EC配方",
+      "date": "2026.6.1",
+      "owner": "赵凌天",
+      "p65": "1、2.5%功夫EC（精粉配方）：TC+46%的8%505混合液+8%601混合液补足+冰醋酸，按经验用600#系列乳化剂会出现杂质絮凝，目前制剂状态正常无该情况，正在尝试用8%BY-125混合液替代601\n2、10%氯氰菊酯EC：TC+42.5%的8%505混合液+8%601混合液补足+1.6%505+1.4%601\n3、40%丙溴磷+4%氯氰菊酯EC还没做\n4、功夫低含量油膏和30%母液还没做",
+      "p612": "1、2.5%功夫EC（精粉、油膏）、10%氯氰菊酯EC、40%丙溴磷+4%氯氰菊酯EC配方均已开发完成，冷热贮中",
+      "p618": "各样品均在冷热贮中，暂未发现异常",
+      "p626": "各样品冷热贮考察均合格",
+      "p703": "各混合物已提交柳星酥具体采购量",
+      "p710": "已提交配方",
+      "status": "completed"
+    },
+    {
+      "name": "烯酰吗啉 12% + 吡唑醚菌酯 6.9% WG 配方开发",
+      "date": "2026.6.1",
+      "owner": "张奎花",
+      "p65": "配方验证中，54度热储9天整体状态还可以",
+      "p612": "54度热储14天没有死颗粒，已送检，等检测检\n结果出来，提交工艺",
+      "p618": "配方开发完成，工艺已提交",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "特丁津 50% WP 配方开发",
+      "date": "2026.6.1",
+      "owner": "张奎花",
+      "p65": "配方开发中，热储10天下水状态还可以",
+      "p612": "配方热储结束，检测结果已出。生产工艺编写中",
+      "p618": "配方开发完成，工艺已提交",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "展示样品安排-CS、FS、EW、ME、ZC",
+      "date": "2026.6.5",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "已完成，待寄出",
+      "p618": "已经寄出",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "陈晨的报价核算",
+      "date": "2026.6.5",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "已完成，待寄出",
+      "p618": "已完成",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "非洲实验室标签设备",
+      "date": "2026.6.5",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "已完成，待寄出",
+      "p618": "已经寄出",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "非洲样品下单流程",
+      "date": "2026.6.5",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "构建中，目前可以先用博科系统",
+      "p618": "构建中，目前可以先用博科系统",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress"
+    },
+    {
+      "name": "艾津集团非洲研发中心建设",
+      "date": "2026.6.5",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "构建中，先提供样品展示",
+      "p618": "样品已经提供，待进一步跟进需求",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress"
+    },
+    {
+      "name": "300g/Kg草甘膦SL（酸计含量300g/Kg，成铵盐）分别测试3%、6%助剂添加量不同助剂类型，实验室表面张力、润湿渗透、数据、制剂在载玻片上蒸发时间等数据表现及现象图片",
+      "date": "2026.6.5",
+      "owner": "赵凌天",
+      "p65": "—",
+      "p612": "科翼助剂6.15日到，先用草甘膦铵盐WSG开始验证配方，测定数据",
+      "p618": "草甘膦原粉、WSG分别添加3%及6%助剂均已验证，冷热贮中，实验室数据下周测定",
+      "p626": "各配方冷热贮考察正常，实验室数据仍在陆续测定中",
+      "p703": "各实验室数据测试完成，草甘膦原粉+6%助剂的表面张力最低，6%助剂的表面张力均低于3%助剂，在润湿、渗透、蒸发性方面各组合无明显差异",
+      "p710": "配方冷热贮中",
+      "status": "in-progress",
+      "p717": "冷热贮到期检测含量中"
+    },
+    {
+      "name": "40g/L烟嘧磺隆OD外购产品1升或5升包装，长期储存稳定性考察",
+      "date": "2026.6.5",
+      "owner": "郭祥蕊",
+      "p65": "—",
+      "p612": "6.11日找到安徽久易和山东京博两个厂家的样品进行经时稳定性考察（700mL）",
+      "p618": "样品放置在500mL透明瓶中经时稳定性考察，目前分层0.3cm，流动性均可以，继续考察。",
+      "p626": "样品流动性可以，无异常。",
+      "p703": "样品流动性可以，无异常。",
+      "p710": "样品流动性可以，无异常。",
+      "status": "in-progress",
+      "p724": "样品流动性可以，久易厂家分层1.2cm，京博厂家分层0.5cm，均无结底。"
+    },
+    {
+      "name": "非洲实验室定位标签、标识牌定制",
+      "date": "2026.6.18",
+      "owner": "杨文林",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "已联系商家，正在定制中",
+      "p703": "已制备完成，待寄走",
+      "p710": "已带给张伟",
+      "status": "completed"
+    },
+    {
+      "name": "1%呋虫胺+0.1%诱虫烯饵剂 配方改进，提升诱食性。可以做不同配方样品，邮寄尼日利亚实地测试，配合配方筛选。",
+      "date": "2026.6.20",
+      "owner": "冯舒文",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "制作中",
+      "p703": "改良配方室内测试中",
+      "p710": "室内测试进行中",
+      "status": "in-progress",
+      "p717": "室内测试结束，制备供试样品",
+      "p724": "交付室内测试引诱性优秀的样品"
+    },
+    {
+      "name": "非洲研发相关物料准备（原药、助剂）",
+      "date": "2026.6.22",
+      "owner": "杨文林",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "原药及助剂已准备好，待寄走",
+      "p703": "原药及助剂已寄走",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "登记样品---0.5%呋虫胺 GEL---30克---30支",
+      "date": "2026.6.22",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "制作中，下周一提供",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress"
+    },
+    {
+      "name": "登记样品---40%呋虫胺WS----10KG",
+      "date": "2026.6.22",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "已班车带艾森",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "登记样品---100g/L联苯菊酯SC----10L",
+      "date": "2026.6.22",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "制作中",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress"
+    },
+    {
+      "name": "登记样品---200g/L吡虫啉SC----10L",
+      "date": "2026.6.22",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "制作中",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress"
+    },
+    {
+      "name": "登记样品---0.5%氟虫腈DP----10KG",
+      "date": "2026.6.22",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "已班车带艾森",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "登记样品---0.5g/L联苯菊酯EW----10L",
+      "date": "2026.6.22",
+      "owner": "张龙",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "浓缩液已经提供，待寄出",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "10%氯氰菊酯EC甲醇体系配方测试稳定性",
+      "date": "2026.7.14",
+      "owner": "赵凌天",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress",
+      "p717": "已制作20%甲醇、40%甲醇、甲醇补足配方冷热贮中"
+    },
+    {
+      "name": "50%丙溴磷EC甲醇体系配方测试稳定性",
+      "date": "2026.7.14",
+      "owner": "赵凌天",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress",
+      "p717": "已制作20%甲醇、甲醇补足配方冷热贮中"
+    },
+    {
+      "name": "40%丙溴磷+4%氯氰菊酯EC甲醇体系配方测试稳定性",
+      "date": "2026.7.14",
+      "owner": "赵凌天",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress",
+      "p717": "已制作20%甲醇、甲醇补足配方冷热贮中"
+    },
+    {
+      "name": "0.5%联苯菊酯EW提高助剂用量筛选稳定配方",
+      "date": "2026.7.14",
+      "owner": "赵凌天",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress",
+      "p717": "尝试乳化剂体系中"
+    },
+    {
+      "name": "各含量草甘膦+2,4滴复配SL制剂配方优化及对比360g/L草甘膦SL药效；例如180g/L草甘膦+10g/L2,4滴SL等比例；尝试加入快T、有机硅助剂药效情况",
+      "date": "2026.7.23",
+      "owner": "赵凌天/廖平强",
+      "status": "in-progress"
+    },
+    {
+      "name": "各含量草甘膦+二甲四氯复配SL制剂配方优化及对比360g/L草甘膦SL药效；例如180g/L草甘膦+10g/L二甲四氯SL等比例；尝试加入快T、有机硅助剂药效情况",
+      "date": "2026.7.23",
+      "owner": "赵凌天/廖平强",
+      "status": "in-progress"
+    },
+    {
+      "name": "各含量草甘膦+精草铵膦复配SL制剂配方优化及对比360g/L草甘膦SL药效；例如180g/L草甘膦+10g/L精草铵膦SL等比例；尝试加入快T、有机硅助剂药效情况",
+      "date": "2026.7.23",
+      "owner": "赵凌天/廖平强",
+      "status": "in-progress"
+    },
+    {
+      "name": "草铵膦也做2,4滴和二甲四氯复配配方，对比200g/L草铵膦SL药效",
+      "date": "2026.7.23",
+      "owner": "赵凌天/廖平强",
+      "status": "in-progress"
+    },
+    {
+      "name": "精草铵膦也做2,4滴和二甲四氯复配配方，对比100g/L精草铵膦SL药效",
+      "date": "2026.7.23",
+      "owner": "赵凌天/廖平强",
+      "status": "in-progress"
+    },
+    {
+      "name": "非洲物料准备（吡虫啉、功夫、特丁津、呋虫胺等原药和研磨固定夹子）",
+      "date": "2026.7.27",
+      "owner": "杨文林",
+      "status": "in-progress"
+    }
+  ],
+  "qa": [
+    {
+      "name": "2,4滴含量检测方法对标确认",
+      "date": "2026.6.1",
+      "owner": "何华新",
+      "p65": "方法已确认，SOP已更改",
+      "p612": "—",
+      "p618": "—",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "草甘膦含量检测方法对标确认",
+      "date": "2026.6.1",
+      "owner": "何华新",
+      "p65": "方法已确认，SOP已更改",
+      "p612": "—",
+      "p618": "—",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "completed"
+    },
+    {
+      "name": "制瓶车间瓶及瓶盖检测项目及方法确认（国内瓶厂检测方法及项目情况）",
+      "date": "2026.6.1",
+      "owner": "黄燕羽",
+      "p65": "—",
+      "p612": "—",
+      "p618": "—",
+      "p626": "—",
+      "p703": "—",
+      "p710": "—",
+      "status": "in-progress"
+    }
+  ],
+  "updated_at": "2026-07-28"
+};
+
+
+
+// ==================== 数据转换 ====================
+function detectIssue(content) {
+  if (!content || content === '—') return false;
+  // Exclude negations like "未发现异常", "暂未发现异常"
+  if (/未发现|暂无|暂未|没有|未出现/.test(content)) return false;
+  const kw = ['失败','析晶','不互溶','膏化','果冻','无法溶解','无法完全','无法做','开发失败','堵塞','死颗粒','分解率高'];
+  return kw.some(k => content.includes(k));
+}
+
+function estimateProgress(content) {
+  if (!content || content === '—') return 0;
+  if (content.includes('合格')||content.includes('已完成')||content.includes('已寄出')||content.includes('已提交')||content.includes('SOP已更改')||content.includes('已班车')||content.includes('已提供')||content.includes('已准备')||content.includes('已确认')||content.includes('已更改')) return 100;
+  if (content.includes('待寄')) return 90;
+  if (content.includes('考察')||content.includes('验证')||content.includes('冷热贮')||content.includes('热储')) return 70;
+  if (content.includes('制作中')||content.includes('构建中')||content.includes('开发中')||content.includes('进行中')||content.includes('定制中')||content.includes('调试中')||content.includes('编写中')) return 40;
+  if (content.includes('还没')||content.includes('未到')||content.includes('未买')||content.includes('联系')) return 20;
+  return 50;
+}
+
+function toProject(item) {
+  const updates = [];
+  const dates = [
+    {k:"p65", d:"6月5日"},
+    {k:"p612", d:"6月12日"},
+    {k:"p618", d:"6月18日"},
+    {k:"p626", d:"6月26日"},
+    {k:"p703", d:"7月3日"},
+    {k:"p710", d:"7月10日"},
+    {k:"p717", d:"7月17日"},
+    {k:"p724", d:"7月24日"},
+    {k:"p731", d:"7月31日"}
+  ];
+  let hasIssue = false;
+  dates.forEach(({k,d}) => {
+    const c = item[k] || '—';
+    if (c === '—') return;
+    const issue = detectIssue(c);
+    if (issue) hasIssue = true;
+    updates.push({date:d, progress:estimateProgress(c), content:c, status:issue?'issue':'active'});
+  });
+  // If no updates, add a placeholder
+  if (updates.length === 0) {
+    updates.push({date:item.date, progress:0, content:'暂无进展记录', status:'active'});
+  }
+  // Determine status
+  let status = item.status === 'completed' ? 'completed' : 'active';
+  if (hasIssue && status === 'active') status = 'issue';
+  // If project is completed, ensure latest update shows 100%
+  if (status === 'completed' && updates.length > 0) {
+    updates[updates.length - 1].progress = 100;
+  }
+  return {name:item.name, leader:item.owner, startDate:item.date, status, updates};
+}
+
+let allProjects = [];
+let rdProjects = rawData.rd.map((item,i) => { const p=toProject(item); p._id='rd_'+i; return p; });
+let qaProjects = rawData.qa.map((item,i) => { const p=toProject(item); p._id='qa_'+i; return p; });
+allProjects = [...rdProjects, ...qaProjects];
+
+// ==================== 渲染 ====================
+const statusMap = {
+  completed:{text:'已完成',cls:'status-completed',badge:'status-completed-badge'},
+  active:{text:'进行中',cls:'status-active',badge:'status-active-badge'},
+  issue:{text:'存在问题',cls:'status-issue',badge:'status-issue-badge'}
+};
+
+let selectedDate = {}; // keyed by project _id
+
+function switchDate(projId, updateIdx) {
+  selectedDate[projId] = updateIdx;
+  // Find the project
+  const p = [...rdProjects, ...qaProjects].find(x => x._id === projId);
+  if (!p) return;
+  const cu = p.updates[updateIdx];
+  const card = document.querySelector(`[data-key="${projId}"]`);
+  if (!card) return;
+
+  // Update date buttons
+  card.querySelectorAll('.date-btn').forEach((btn, i) => {
+    btn.className = 'date-btn' + (i === updateIdx ? ' active' : '') + (p.updates[i] && p.updates[i].status === 'issue' ? ' has-issue' : '');
+  });
+
+  // Animate progress: reset to 0 then set target
+  const fill = card.querySelector('.progress-fill');
+  const pct = card.querySelector('.progress-pct');
+  if (fill) {
+    fill.style.transition = 'none';
+    fill.style.width = '0%';
+    fill.offsetHeight; // force reflow
+    fill.style.transition = 'width .6s ease';
+    fill.style.width = cu.progress + '%';
+  }
+  if (pct) pct.textContent = cu.progress + '%';
+
+  // Update content
+  const update = card.querySelector('.latest-update');
+  if (update) {
+    update.innerHTML = '<strong>📝 进展内容：</strong>' + cu.content + '<div class="update-time">🕐 更新时间：' + cu.date + '</div>';
+  }
+}
+
+function renderCard(p) {
+  const key = p._id;
+  if (selectedDate[key] === undefined) selectedDate[key] = p.updates.length - 1;
+  const ci = selectedDate[key];
+  const cu = p.updates[ci];
+  const si = statusMap[p.status];
+
+  let dateBtns = p.updates.map((u,i) => {
+    const act = i === ci ? ' active' : '';
+    const iss = u.status === 'issue' ? ' has-issue' : '';
+    return `<button class="date-btn${act}${iss}" onclick="switchDate('${key}',${i})">📅 ${u.date}</button>`;
+  }).join('');
+
+  const collapsed = collapseDone && p.status === 'completed' ? ' collapsed' : '';
+
+  return `<div class="project-card ${si.cls}${collapsed}" data-key="${key}">
+    <div class="project-header" onclick="toggleCard('${key}')">
+      <div class="project-name">${p.name}<span class="collapse-arrow">▶</span></div>
+      <span class="project-status ${si.badge}">${si.text}</span>
+    </div>
+    <div class="card-body">
+    <div class="project-info">
+      <div class="info-item"><span class="info-label">👤 负责人：</span><span class="info-value">${p.leader}</span></div>
+      <div class="info-item"><span class="info-label">📅 开始日期：</span><span class="info-value">${p.startDate}</span></div>
+      <div class="info-item"><span class="info-label">📝 更新次数：</span><span class="info-value">${p.updates.length} 次</span></div>
+    </div>
+    <div class="date-selector">
+      <span class="date-label">📆 选择日期：</span>
+      ${dateBtns}
+    </div>
+    <div class="project-progress">
+      <div class="progress-header">
+        <span class="progress-label">📊 项目进度</span>
+        <span class="progress-pct">${cu.progress}%</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${cu.progress}%"></div></div>
+    </div>
+    <div class="latest-update">
+      <strong>📝 进展内容：</strong>${cu.content}
+      <div class="update-time">🕐 更新时间：${cu.date}</div>
+    </div>
+    </div>
+  </div>`;
+}
+
+function renderAll() {
+  // Header time
+  document.getElementById('headerTime').textContent = '更新于 ' + new Date().toLocaleString('zh-CN');
+  // Footer refresh time
+  var rtEl = document.getElementById('refreshTime');
+  if (rtEl) rtEl.textContent = '刷新于 ' + new Date().toLocaleTimeString('zh-CN');
+
+  // Stats
+  const all = allProjects;
+  const total = all.length;
+  const active = all.filter(p=>p.status==='active').length;
+  const completed = all.filter(p=>p.status==='completed').length;
+  const issue = all.filter(p=>p.status==='issue').length;
+  animateNum('stat-total', total);
+  animateNum('stat-active', active);
+  animateNum('stat-completed', completed);
+  animateNum('stat-issue', issue);
+
+  // Populate owner dropdown - only show owners from visible sections
+  const sectionProjects = currentSection === 'all' ? allProjects
+    : currentSection === 'rd' ? rdProjects : qaProjects;
+  const owners = [...new Set(sectionProjects.map(p=>p.leader))].sort();
+  const ownerSelect = document.getElementById('ownerFilter');
+  const prevOwner = ownerSelect.value;
+  ownerSelect.innerHTML = '<option value="all">全部</option>' + owners.map(o=>`<option value="${o}">${o}</option>`).join('');
+  if (owners.includes(prevOwner)) { ownerSelect.value = prevOwner; }
+  else { ownerSelect.value = 'all'; currentOwner = 'all'; }
+
+  // Filter helper
+  const searchText = (document.getElementById('searchInput').value || '').toLowerCase();
+  const match = p => {
+    if (currentStatus !== 'all' && p.status !== currentStatus) return false;
+    if (currentOwner !== 'all' && p.leader !== currentOwner) return false;
+    if (searchText) {
+      const inName = p.name.toLowerCase().includes(searchText);
+      const inContent = p.updates.some(u => u.content && u.content.toLowerCase().includes(searchText));
+      if (!inName && !inContent) return false;
+    }
+    return true;
+  };
+
+  // RD list
+  const rdVisible = currentSection === 'all' || currentSection === 'rd';
+  const rdFiltered = rdProjects.filter(match);
+  document.getElementById('rdSection').style.display = rdVisible ? '' : 'none';
+  document.getElementById('rdCount').textContent = `共 ${rdProjects.length} 个项目，当前显示 ${rdFiltered.length} 个`;
+  document.getElementById('rdList').innerHTML = rdFiltered.map(renderCard).join('') ||
+    '<div style="text-align:center;padding:30px;color:#aaa;">暂无符合条件的项目</div>';
+
+  // QA list
+  const qaVisible = currentSection === 'all' || currentSection === 'qa';
+  const qaFiltered = qaProjects.filter(match);
+  document.getElementById('qaSection').style.display = qaVisible ? '' : 'none';
+  document.getElementById('qaCount').textContent = `共 ${qaProjects.length} 个项目，当前显示 ${qaFiltered.length} 个`;
+  document.getElementById('qaList').innerHTML = qaFiltered.map(renderCard).join('') ||
+    '<div style="text-align:center;padding:30px;color:#aaa;">暂无符合条件的项目</div>';
+}
+
+function animateNum(id, target) {
+  const el = document.getElementById(id);
+  let cur = parseInt(el.textContent) || 0;
+  if (cur === target) { el.textContent = target; return; }
+  const step = Math.max(1, Math.abs(target - cur) / 20);
+  const timer = setInterval(() => {
+    if (cur < target) cur = Math.min(cur + step, target);
+    else cur = Math.max(cur - step, target);
+    el.textContent = Math.floor(cur);
+    if (cur === target) clearInterval(timer);
+  }, 25);
+}
+
+let currentSection = 'all';
+let currentStatus = 'all';
+let currentOwner = 'all';
+
+function filterSection(s) {
+  currentSection = s;
+  document.querySelectorAll('#filters-section .filter-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderAll();
+}
+function filterStatus(s) {
+  currentStatus = s;
+  document.querySelectorAll('#filters-status .filter-btn').forEach(b=>b.classList.remove('active'));
+  event.target.classList.add('active');
+  renderAll();
+}
+function updateFilters() {
+  currentOwner = document.getElementById('ownerFilter').value;
+  renderAll();
+}
+
+// 初始化负责人下拉
+let collapseDone = true; // default: collapse completed cards
+function toggleCollapse() {
+  collapseDone = !collapseDone;
+  document.getElementById('collapseToggle').textContent = collapseDone ? '📦 折叠已完成' : '📂 展开全部';
+  renderAll();
+}
+function toggleCard(key) {
+  const el = document.querySelector(`[data-key="${key}"]`) || event.target.closest('.project-card');
+  if (el) { el.classList.toggle('collapsed'); }
+}
+
+// Back to top
+window.addEventListener('scroll', ()=>{
+  document.getElementById('backToTop').classList.toggle('visible', window.scrollY > 600);
+});
+
+// Initialize with embedded data
+rdProjects = rawData.rd.map((item,i) => { const p=toProject(item); p._id='rd_'+i; return p; });
+qaProjects = rawData.qa.map((item,i) => { const p=toProject(item); p._id='qa_'+i; return p; });
+allProjects = [...rdProjects, ...qaProjects];
+renderAll();
+</script>
+
 </body>
 </html>
