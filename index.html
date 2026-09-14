@@ -690,7 +690,7 @@ function detectIssue(content) {
   if (!content || content === '—') return false;
   // Exclude negations like "未发现异常", "暂未发现异常"
   if (/未发现|暂无|暂未|没有|未出现/.test(content)) return false;
-  const kw = ['失败','析晶','不互溶','膏化','果冻','无法溶解','无法完全','无法做','开发失败','堵塞','死颗粒','分解率高'];
+  const kw = ['失败','析晶','不互溶','膏化','果冻','无法溶解','无法完全','无法做','开发失败','堵塞','死颗粒','分解率高','分解严重'];
   return kw.some(k => content.includes(k));
 }
 
@@ -781,8 +781,7 @@ function toProject(item) {
     updates.push({date:item.date, progress:0, content:'暂无进展记录', status:'active'});
   }
   // Determine status
-  let status = item.status === 'completed' ? 'completed' : 'active';
-  if (hasIssue && status === 'active') status = 'issue';
+  let status = item.status === 'completed' ? 'completed' : (item.status === 'issue' ? 'issue' : 'active');
   // If project is completed, ensure latest update shows 100%
   if (status === 'completed' && updates.length > 0) {
     updates[updates.length - 1].progress = 100;
